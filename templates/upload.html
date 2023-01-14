@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+   <title>Melody variations</title>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.0.js"></script>          
+      <script type="text/javascript">
+ $("document").ready(function(){
+    $("#form").submit(function(e) {
+    document.getElementById("message").innerHTML = "Upload and processing of the file has started... The processing can take a few minutes..";
+    e.preventDefault();
+    const formData = new FormData($(this)[0]);
+    $.ajax({
+        type: "POST",
+        url: "/",
+        data: formData,
+       contentType: false,
+        cache: false,
+        processData: false,
+        xhrFields: {
+        responseType: 'blob' // to avoid binary data being mangled on charset conversion
+        },
+        success: function(blob, status, xhr) {
+        // check for a filename
+        
+        var filename = "";
+        var disposition = xhr.getResponseHeader('Content-Disposition');
+        if (disposition && disposition.indexOf('attachment') !== -1) {
+            var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+            var matches = filenameRegex.exec(disposition);
+            if (matches != null && matches[1]) filename = matches[1].replace(/['"]/g, '');
+        }
+
+        if (typeof window.navigator.msSaveBlob !== 'undefined') {
+            // IE workaround for "HTML7007: One or more blob URLs were revoked by closing the blob for which they were created. These URLs will no longer resolve as the data backing the URL has been freed."
+            window.navigator.msSaveBlob(blob, filename);
+        } else {
+            var URL = window.URL || window.webkitURL;
+            var downloadUrl = URL.createObjectURL(blob);
+
+            if (filename) {
+                // use HTML5 a[download] attribute to specify filename
+                var a = document.createElement("a");
+                // safari doesn't support this yet
+                if (typeof a.download === 'undefined') {
+                    window.location.href = downloadUrl;
+                } else {
+                    a.href = downloadUrl;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                }
+            } else {
+                window.location.href = downloadUrl;
+            }
+
+            document.getElementById("message").innerHTML = "Download finished! Please have a look and leave some feeback for the musical side of things :-) musescore1983@gmail.com";
+
+            setTimeout(function () { URL.revokeObjectURL(downloadUrl); }, 100); // cleanup
+        }
+       } ,
+        error: function(result) {
+            document.getElementById("message").innerHTML = 'An error occurred. Sorry for the inconvenience. :-(';
+        }
+    });
+});
+});
+  </script>
+<style>
+input[type=text], select {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+input[type=submit] {
+  width: 100%;
+  background-color: #4CAF50;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+input[type=submit]:hover {
+  background-color: #45a049;
+}
+
+div {
+  border-radius: 5px;
+  background-color: #f2f2f2;
+  padding: 20px;
+}
+</style>
+  </head>
+  <body>
+
+   <div>
+    <p>Here you can upload midi or musicxml file (it works somehow ok with a few bars and up to four or five voices, like meoldies or short themes) and please be patient after upload, as the processing can take a few minutes (or a few hours if the file is too large).</p>
+    <ul>
+      <li>In case it should sound like the original, you could use the Cosine function.</li>
+      <li>In case it should sound like the spiced up version of the original, you could use the Blancmange function.</li>
+      <li>In case it should sound different from the original, you could use the Weierstrass function.</li>
+      <li>The smaller the epsilon, the more it will sound like the original</li>
+    </ul>  
+    <form method=post enctype=multipart/form-data id="form">
+      <label for="funcType">Choose a time series (leave at default if unsure):</label>
+  <select name="funcType" id="funcType">
+    <option value="cos">Cosine</option>
+    <option value="weierstrass">Weierstrass</option>
+    <option value="blancmange">Blancmange</option>
+    <option value="cellerier">Cellerier</option>  
+  </select>
+  <label for="eps">Choose a small epsilon (leave at default if unsure):</label>
+  <select name="eps" id="eps">
+    <option value="0.001">0.001</option>
+        <option value="0.01">0.01</option>
+            <option value="0.1">0.1</option>
+                <option value="0.0001">0.0001</option>
+  </select>
+  <label for="title">Title:</label>
+    <input name="title" id = "title" value="Music21 Fragment">
+<label for="composer">Composer:</label>
+<input name="composer" id = "composer" value="music21">
+<br/>
+<label for="fileType">Type of file for download</label>
+  <select name="fileType" id="fileType">
+    <option value="mid">mid</option>
+    <option value="musicxml">musicxml</option>
+  </select>
+
+  <br></br>
+     <label for="tempo">What is the tempo in the uploaded midi:</label>
+      <input type="integer" name="tempo" id = "tempo" value=80>
+      <input type="file" name="file" id="file">
+      <input type=submit id="button" value="Upload Midi, process it and download new midi">
+    </form>
+  <div id="message"></div>  
+  </div>
+  </body>
+
+</html>
